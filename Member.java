@@ -13,9 +13,9 @@ class Member extends Thread {
   public static int id_count = id;
   public static int value;
 
-  public static int total_members;
-  public static int majority;
-  public static int accept_count;
+  public static int total_members = 3;
+  public static int majority = 2;
+  public static int accept_count = 0;
 
   public static int promised_id = -1;
   public static int promised_value = -1;
@@ -32,6 +32,7 @@ class Member extends Thread {
     if(command.equals("prepare")) {
       send_prepare(id);
     }
+
   }
 
   private static class Server implements Runnable {
@@ -79,8 +80,18 @@ class Member extends Thread {
         send_promise(id, recReq.id);
       } else if (resType.equals("prepare-ok")) {
         System.out.println("Member " + recReq.id + "  has promised");
+        accept_count++;
+        System.out.println("Accept count: " + accept_count);
+        if (accept_count >= 2) {
+          accept_count = 0;
+          System.out.println("I have majority votes. I must now propose.");
+          send_proposal(id, 1);
+        }
+      } else if (resType.equals("propose")) {
+        send_accept(id, recReq.id, recReq.value);
+      } else if (resType.equals("Accepted")) {
+        System.out.println("Member " + recReq.id + " has accepted value " + recReq.value);
       }
-
 
       }
       catch (Exception e) {
@@ -113,6 +124,36 @@ class Member extends Thread {
       Socket socket = new Socket("localhost", port);
       ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
       out.writeObject(promise);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static void send_proposal(int id, int value) {
+    try {
+      Request proposal = new Request("propose", id, 1);
+
+      for (int i = 1; i < 4; i++) {
+        if(i != id) {
+          Socket socket = new Socket("localhost", 2000 + i);
+          ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+          out.writeObject(proposal);
+        }
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static void send_accept(int id, int p, int value) {
+    try {
+      int port = 2000 + p;
+      Request accept = new Request("Accepted", id, value);
+      Socket socket = new Socket("localhost", port);
+      ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+      out.writeObject(accept);
     }
     catch (Exception e) {
       e.printStackTrace();

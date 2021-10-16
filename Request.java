@@ -13,7 +13,7 @@ public class Request implements Serializable {
     id = id_in;
   }
 
-  public Response (String type_in, int id_in, int value_in) {
+  public Request (String type_in, int id_in, int value_in) {
     value = value_in;
     type = type_in;
     id = id_in;
