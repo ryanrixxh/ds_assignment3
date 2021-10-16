@@ -19,6 +19,7 @@ class Member extends Thread {
 
   public static int promised_id = -1;
   public static int promised_value = -1;
+  public static int max_id = 0;
 
   public static void main(String[] args) {
     id = Integer.parseInt(args[0]);
@@ -74,10 +75,12 @@ class Member extends Thread {
       ObjectInputStream in = new ObjectInputStream(recieveSocket.getInputStream());
       Request recReq = (Request) in.readObject();
       String resType = recReq.type;
+      int recID = recReq.id;
       System.out.println(resType);
 
       if (resType.equals("prepare")) {
-        send_promise(id, recReq.id);
+        send_promise(id, recID);
+
       } else if (resType.equals("prepare-ok")) {
         System.out.println("Member " + recReq.id + "  has promised");
         accept_count++;
@@ -87,13 +90,19 @@ class Member extends Thread {
           System.out.println("I have majority votes. I must now propose.");
           send_proposal(id, 1);
         }
+
       } else if (resType.equals("propose")) {
-        send_accept(id, recReq.id, recReq.value);
+        if(recID > max_id) {
+          max_id = recID;
+          send_accept(id, recReq.id, recReq.value);
+        } else {
+          send_fail(id, recID);
+        }
+
       } else if (resType.equals("Accepted")) {
         System.out.println("Member " + recReq.id + " has accepted value " + recReq.value);
-      }
-
-      }
+        }
+    }
       catch (Exception e) {
         e.printStackTrace();
       }
@@ -121,6 +130,19 @@ class Member extends Thread {
     try {
       int port = 2000 + p;
       Request promise = new Request("prepare-ok", id);
+      Socket socket = new Socket("localhost", port);
+      ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+      out.writeObject(promise);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static void send_fail(int id, int p) {
+    try {
+      int port = 2000 + p;
+      Request promise = new Request("fail", id);
       Socket socket = new Socket("localhost", port);
       ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
       out.writeObject(promise);
