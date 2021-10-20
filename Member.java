@@ -30,9 +30,14 @@ class Member extends Thread {
     Scanner sys_in = new Scanner(System.in);
     String command = sys_in.nextLine();
 
-    if(command.equals("prepare")) {
-      send_prepare(id);
+    while (!command.equals("end")) {
+      if(command.equals("prepare")) {
+        send_prepare(id);
+      }
+      command = sys_in.nextLine();
     }
+
+    System.exit(0);
 
   }
 
@@ -87,12 +92,13 @@ class Member extends Thread {
         System.out.println("Accept count: " + accept_count);
         if (accept_count >= 2) {
           accept_count = 0;
-          System.out.println("I have majority votes. I must now propose.");
+          System.out.println("I have majority promises. I must now propose.");
           send_proposal(id, 1);
         }
 
       } else if (resType.equals("propose")) {
-        if(recID > max_id) {
+        if(recID >= max_id) {
+          System.out.println("My current max id is: " + max_id + ". The proposal id is: " + recID);
           max_id = recID;
           send_accept(id, recReq.id, recReq.value);
         } else {
