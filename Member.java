@@ -9,12 +9,15 @@ import paxos.Request;
 class Member extends Thread {
   static ServerSocket server = null;
 
+  public static int current_leader = 0;
+  public static int total_members = 3;
+
   public static int id;
   public static int id_count = id;
   public static int value;
 
-  public static int total_members = 3;
   public static int majority = 2;
+  public static int promise_count = 0;
   public static int accept_count = 0;
 
   public static int promised_id = -1;
@@ -22,22 +25,35 @@ class Member extends Thread {
   public static int max_id = 0;
 
   public static void main(String[] args) {
-    id = Integer.parseInt(args[0]);
-    int p = 2000 + id;
-    Server server = new Server(p);
-    new Thread(server).start();
+    try {
+      File council = new File("Council.txt");
+      Scanner file_in = new Scanner(council);
+      String leader = file_in.nextLine();
+      leader = leader.replaceAll("[^\\d]","");
+      current_leader = Integer.parseInt(leader);
 
-    Scanner sys_in = new Scanner(System.in);
-    String command = sys_in.nextLine();
+      id = Integer.parseInt(args[0]);
+      int p = 2000 + id;
+      Server server = new Server(p);
+      new Thread(server).start();
 
-    while (!command.equals("end")) {
-      if(command.equals("prepare")) {
-        send_prepare(id);
+      Scanner sys_in = new Scanner(System.in);
+      String command = sys_in.nextLine();
+
+      while (!command.equals("end")) {
+        if(command.equals("prepare")) {
+          send_prepare(id);
+        }
+        command = sys_in.nextLine();
       }
-      command = sys_in.nextLine();
-    }
 
-    System.exit(0);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+    finally {
+      System.exit(0);
+    }
 
   }
 
@@ -88,10 +104,10 @@ class Member extends Thread {
 
       } else if (resType.equals("prepare-ok")) {
         System.out.println("Member " + recReq.id + "  has promised");
-        accept_count++;
-        System.out.println("Accept count: " + accept_count);
-        if (accept_count >= 2) {
-          accept_count = 0;
+        promise_count++;
+        System.out.println("Promise count: " + promise_count);
+        if (promise_count >= 2) {
+          promise_count = 0;
           System.out.println("I have majority promises. I must now propose.");
           send_proposal(id, 1);
         }
@@ -107,7 +123,13 @@ class Member extends Thread {
 
       } else if (resType.equals("Accepted")) {
         System.out.println("Member " + recReq.id + " has accepted value " + recReq.value);
+        accept_count++;
+        if(accept_count == majority) {
+          System.out.println("I have majority accepts. I am the council leader.");
+          accept_count = 0;
+          change_leader(id);
         }
+      }
     }
       catch (Exception e) {
         e.printStackTrace();
@@ -132,6 +154,7 @@ class Member extends Thread {
     }
   }
 
+  //Send a promise to accept a proposal along with the id the promise came from
   private static void send_promise(int id, int p) {
     try {
       int port = 2000 + p;
@@ -145,6 +168,7 @@ class Member extends Thread {
     }
   }
 
+  //Sends a fail along with the ID the fail came from
   private static void send_fail(int id, int p) {
     try {
       int port = 2000 + p;
@@ -158,6 +182,7 @@ class Member extends Thread {
     }
   }
 
+  //Sends a proposal with the id of the proposer and the value being proposed
   private static void send_proposal(int id, int value) {
     try {
       Request proposal = new Request("propose", id, 1);
@@ -175,6 +200,7 @@ class Member extends Thread {
     }
   }
 
+  //Sends an accept along with the ID it came from and the value it has accepted
   private static void send_accept(int id, int p, int value) {
     try {
       int port = 2000 + p;
@@ -182,6 +208,34 @@ class Member extends Thread {
       Socket socket = new Socket("localhost", port);
       ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
       out.writeObject(accept);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  //Changes the leader information by writing to a new file and replacing the old file
+  private static void change_leader(int id) {
+    try {
+      File council = new File("Council.txt");
+      File temp = new File("temp.txt");
+      PrintWriter pw = new PrintWriter(temp);
+      Scanner sc = new Scanner(council);
+
+      String newLead = "Leader: " + id + "\r\n";
+      int i = 0;
+      pw.print(newLead);
+      sc.nextLine();
+      while(sc.hasNextLine()) {
+        pw.print(sc.nextLine());
+      }
+
+      sc.close();
+      pw.close();
+
+      council.delete();
+      temp.renameTo(council);
+
     }
     catch (Exception e) {
       e.printStackTrace();
