@@ -26,6 +26,7 @@ class Member extends Thread {
 
   public static Boolean proposal_accepted = false;
   public static int accepted_id = -1;
+  public static int accepted_value = -1;
 
   public static void main(String[] args) {
     try {
@@ -118,11 +119,19 @@ class Member extends Thread {
         if (promise_count >= 2) {
           promise_count = 0;
           System.out.println("I have majority promises. I must now propose.");
-          send_proposal(id, 1);
+          send_proposal(id, id);
         }
 
       } else if (resType.equals("preAccept")) {
         System.out.println("Member " + recReq.id + "  has already accepted value " + recReq.value + " from " + recReq.accepted_id);
+        promise_count++;
+        accepted_value = recReq.value;
+        System.out.println("Promise count: " + promise_count);
+        if (promise_count >= 2) {
+          promise_count = 0;
+          System.out.println("I have majority promises. I must now propose.");
+          send_proposal(id, accepted_value);
+        }
 
       } else if (resType.equals("propose")) {
         if(recID >= max_id) {
@@ -141,9 +150,14 @@ class Member extends Thread {
         System.out.println("Member " + recReq.id + " has accepted value " + recReq.value);
         accept_count++;
         if(accept_count == majority) {
-          System.out.println("I have majority accepts. I am the council leader.");
           accept_count = 0;
-          change_leader(id);
+          if(proposal_accepted) {
+            System.out.println("The new council leader is " + accepted_id);
+            change_leader(accepted_id);
+          } else {
+            System.out.println("I am the new council leader");
+            change_leader(id);
+          }
         }
       }
     }
@@ -214,7 +228,7 @@ class Member extends Thread {
   //Sends a proposal with the id of the proposer and the value being proposed
   private static void send_proposal(int id, int value) {
     try {
-      Request proposal = new Request("propose", id, 1);
+      Request proposal = new Request("propose", id, value);
 
       for (int i = 1; i < 4; i++) {
         if(i != id) {
