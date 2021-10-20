@@ -24,13 +24,13 @@ class Member extends Thread {
   public static int promised_value = -1;
   public static int max_id = 0;
 
+  public static Boolean proposal_accepted = false;
+  public static int accepted_id = -1;
+
   public static void main(String[] args) {
     try {
-      File council = new File("Council.txt");
-      Scanner file_in = new Scanner(council);
-      String leader = file_in.nextLine();
-      leader = leader.replaceAll("[^\\d]","");
-      current_leader = Integer.parseInt(leader);
+      current_leader = find_leader();
+      System.out.println("Current Leader: " + current_leader);
 
       id = Integer.parseInt(args[0]);
       int p = 2000 + id;
@@ -43,6 +43,11 @@ class Member extends Thread {
       while (!command.equals("end")) {
         if(command.equals("prepare")) {
           send_prepare(id);
+        } else if (command.equals("who")) {
+          int leader_found = find_leader();
+          System.out.println("Current Leader: " + find_leader());
+          if (current_leader != leader_found)
+            current_leader = leader_found;
         }
         command = sys_in.nextLine();
       }
@@ -100,7 +105,11 @@ class Member extends Thread {
       System.out.println(resType);
 
       if (resType.equals("prepare")) {
-        send_promise(id, recID);
+        if (proposal_accepted) {
+          send_previous_accept(id, accepted_id, recID, value);
+        } else {
+          send_promise(id, recID);
+        }
 
       } else if (resType.equals("prepare-ok")) {
         System.out.println("Member " + recReq.id + "  has promised");
@@ -112,11 +121,18 @@ class Member extends Thread {
           send_proposal(id, 1);
         }
 
+      } else if (resType.equals("preAccept")) {
+        System.out.println("Member " + recReq.id + "  has already accepted value " + recReq.value + " from " + recReq.accepted_id);
+
       } else if (resType.equals("propose")) {
         if(recID >= max_id) {
           System.out.println("My current max id is: " + max_id + ". The proposal id is: " + recID);
           max_id = recID;
           send_accept(id, recReq.id, recReq.value);
+          proposal_accepted = true;
+          value = recReq.value;
+          accepted_id = recReq.id;
+          System.out.println("I have accepted value " + value + " from Member " + recID);
         } else {
           send_fail(id, recID);
         }
@@ -160,6 +176,19 @@ class Member extends Thread {
       int port = 2000 + p;
       Request promise = new Request("prepare-ok", id);
       Socket socket = new Socket("localhost", port);
+      ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+      out.writeObject(promise);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static void send_previous_accept(int id, int accepted_id, int p, int value) {
+    try {
+      int port = 2000 + p;
+      Request promise = new Request("preAccept", id, accepted_id, value);
+      Socket socket = new Socket ("localhost", port);
       ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
       out.writeObject(promise);
     }
@@ -214,6 +243,25 @@ class Member extends Thread {
     }
   }
 
+  //Reads the Council file to find the current leader
+  private static int find_leader() {
+    int found = -1;
+    try {
+      File council = new File("Council.txt");
+      Scanner file_in = new Scanner(council);
+      String leader = file_in.nextLine();
+
+      leader = leader.replaceAll("[^\\d]","");
+      found = Integer.parseInt(leader);
+
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+    finally {
+      return found;
+    }
+  }
   //Changes the leader information by writing to a new file and replacing the old file
   private static void change_leader(int id) {
     try {
