@@ -8,25 +8,29 @@ import paxos.Request;
 
 class Member extends Thread {
   static ServerSocket server = null;
+  static String command = "";
+  static Scanner sys_in = new Scanner(System.in);
 
   public static int current_leader = 0;
   public static int total_members = 3;
 
   public static int id;
   public static int id_count = id;
-  public static int value;
+  public static int value = id;
 
   public static int majority = 2;
+  public static Boolean propose_init = false;
   public static int promise_count = 0;
   public static int accept_count = 0;
 
   public static int promised_id = -1;
   public static int promised_value = -1;
+  public static int max_prepare_id = 0;
   public static int max_id = 0;
 
   public static Boolean proposal_accepted = false;
   public static int accepted_id = -1;
-  public static int accepted_value = -1;
+  public static int accepted_value = id;
 
   public static void main(String[] args) {
     try {
@@ -39,9 +43,9 @@ class Member extends Thread {
       new Thread(server).start();
 
       Scanner sys_in = new Scanner(System.in);
-      String command = sys_in.nextLine();
 
       while (!command.equals("end")) {
+        command = sys_in.nextLine();
         if(command.equals("prepare")) {
           send_prepare(id);
         } else if (command.equals("who")) {
@@ -49,8 +53,9 @@ class Member extends Thread {
           System.out.println("Current Leader: " + find_leader());
           if (current_leader != leader_found)
             current_leader = leader_found;
+        } else if (command.equals("propose")) {
+          propose_init = true;
         }
-        command = sys_in.nextLine();
       }
 
     }
@@ -106,10 +111,16 @@ class Member extends Thread {
       System.out.println(resType);
 
       if (resType.equals("prepare")) {
-        if (proposal_accepted) {
-          send_previous_accept(id, accepted_id, recID, value);
+        System.out.println("Recieved prepare request from id " + recID);
+        if (recID >= max_prepare_id) {
+          max_prepare_id = recID;
+          if (proposal_accepted) {
+            send_previous_accept(id, accepted_id, recID, value);
+          } else {
+            send_promise(id, recID);
+          }
         } else {
-          send_promise(id, recID);
+          send_fail(id, recID);
         }
 
       } else if (resType.equals("prepare-ok")) {
@@ -118,8 +129,15 @@ class Member extends Thread {
         System.out.println("Promise count: " + promise_count);
         if (promise_count >= 2) {
           promise_count = 0;
-          System.out.println("I have majority promises. I must now propose.");
-          send_proposal(id, id);
+          System.out.println("I have majority promises. Type propose when ready.");
+          while (!propose_init) {
+            Thread.sleep(200);
+          }
+          if(proposal_accepted) {
+            send_proposal(id, accepted_value);
+          } else {
+            send_proposal(id, id);
+          }
         }
 
       } else if (resType.equals("preAccept")) {
@@ -129,8 +147,15 @@ class Member extends Thread {
         System.out.println("Promise count: " + promise_count);
         if (promise_count >= 2) {
           promise_count = 0;
-          System.out.println("I have majority promises. I must now propose.");
-          send_proposal(id, accepted_value);
+          System.out.println("I have majority promises. Type propose when ready.");
+          while (!propose_init) {
+            Thread.sleep(500);
+          }
+          if(proposal_accepted) {
+            send_proposal(id, accepted_value);
+          } else {
+            send_proposal(id, id);
+          }
         }
 
       } else if (resType.equals("propose")) {
@@ -152,8 +177,8 @@ class Member extends Thread {
         if(accept_count == majority) {
           accept_count = 0;
           if(proposal_accepted) {
-            System.out.println("The new council leader is " + accepted_id);
-            change_leader(accepted_id);
+            System.out.println("The new council leader is " + accepted_value);
+            change_leader(accepted_value);
           } else {
             System.out.println("I am the new council leader");
             change_leader(id);
