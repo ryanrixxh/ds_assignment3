@@ -113,6 +113,7 @@ class Member extends Thread {
 
       if (resType.equals("prepare")) {
         System.out.println("Recieved prepare request from id " + recID);
+        System.out.println(max_prepare_id);
         if (recID >= max_prepare_id) {
           max_prepare_id = recID;
           if (proposal_accepted) {
@@ -130,13 +131,11 @@ class Member extends Thread {
         System.out.println("Promise count: " + promise_count);
         if (promise_count >= 2) {
           promise_count = 0;
-          System.out.println("I have majority promises. Type propose when ready.");
-          while (!propose_init) {
-            Thread.sleep(200);
-          }
           if(proposal_accepted) {
+            System.out.println("I have majority accepts. Proposing M" + accepted_value);
             send_proposal(id, accepted_value);
           } else {
+            System.out.println("I have majority accepts. Proposing myself");
             send_proposal(id, id);
           }
         }
@@ -148,20 +147,18 @@ class Member extends Thread {
         System.out.println("Promise count: " + promise_count);
         if (promise_count >= 2) {
           promise_count = 0;
-          System.out.println("I have majority promises. Type propose when ready.");
-          while (!propose_init) {
-            Thread.sleep(500);
-          }
           if(proposal_accepted) {
+            System.out.println("I have majority accepts. Proposing M" + accepted_value);
             send_proposal(id, accepted_value);
           } else {
+            System.out.println("I have majority accepts. Proposing myself");
             send_proposal(id, id);
           }
         }
 
       } else if (resType.equals("propose")) {
-        if(recID >= max_id) {
-          System.out.println("My current max id is: " + max_id + ". The proposal id is: " + recID);
+        if(recID == max_prepare_id) {
+          System.out.println("I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
           max_id = recID;
           send_accept(id, recReq.id, recReq.value);
           proposal_accepted = true;
