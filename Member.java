@@ -29,7 +29,8 @@ class Member extends Thread {
   public static int max_prepare_id = 0;
   public static int max_id = 0;
 
-  public static Boolean proposal_accepted = false;
+  public static Boolean send_prior_prop = false;
+  public static Boolean prior_recieved = false;
   public static int accepted_id = -1;
   public static int accepted_value = id;
 
@@ -116,7 +117,7 @@ class Member extends Thread {
         System.out.println(max_prepare_id);
         if (recID >= max_prepare_id) {
           max_prepare_id = recID;
-          if (proposal_accepted) {
+          if (send_prior_prop) {
             send_previous_accept(id, accepted_id, recID, value);
           } else {
             send_promise(id, recID);
@@ -131,7 +132,7 @@ class Member extends Thread {
         System.out.println("Promise count: " + promise_count);
         if (promise_count >= 2) {
           promise_count = 0;
-          if(proposal_accepted) {
+          if(prior_recieved) {
             System.out.println("I have majority accepts. Proposing M" + accepted_value);
             send_proposal(id, accepted_value);
           } else {
@@ -141,13 +142,14 @@ class Member extends Thread {
         }
 
       } else if (resType.equals("preAccept")) {
+        prior_recieved = true;
         System.out.println("Member " + recReq.id + "  has already accepted value " + recReq.value + " from " + recReq.accepted_id);
         promise_count++;
         accepted_value = recReq.value;
         System.out.println("Promise count: " + promise_count);
         if (promise_count >= 2) {
           promise_count = 0;
-          if(proposal_accepted) {
+          if(prior_recieved) {
             System.out.println("I have majority accepts. Proposing M" + accepted_value);
             send_proposal(id, accepted_value);
           } else {
@@ -161,7 +163,7 @@ class Member extends Thread {
           System.out.println("I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
           max_id = recID;
           send_accept(id, recReq.id, recReq.value);
-          proposal_accepted = true;
+          send_prior_prop = true;
           value = recReq.value;
           accepted_id = recReq.id;
           System.out.println("I have accepted value " + value + " from Member " + recID);
@@ -174,7 +176,7 @@ class Member extends Thread {
         accept_count++;
         if(accept_count == majority) {
           accept_count = 0;
-          if(proposal_accepted) {
+          if(prior_recieved) {
             System.out.println("The new council leader is " + accepted_value);
             change_leader(accepted_value);
           } else {
