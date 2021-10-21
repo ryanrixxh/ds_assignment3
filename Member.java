@@ -22,6 +22,7 @@ class Member extends Thread {
   public static Boolean propose_init = false;
   public static int promise_count = 0;
   public static int accept_count = 0;
+  public static int fail_count = 0;
 
   public static int promised_id = -1;
   public static int promised_value = -1;
@@ -183,6 +184,15 @@ class Member extends Thread {
             System.out.println("I am the new council leader");
             change_leader(id);
           }
+        }
+
+      } else if (resType.equals("fail")) {
+        fail_count++;
+        if (fail_count >= (total_members - 1)/2) {
+          Thread.sleep(200);
+          promise_count = 0;
+          fail_count = 0;
+          System.out.println("Prepare has failed. Not enough promises");
         }
       }
     }
