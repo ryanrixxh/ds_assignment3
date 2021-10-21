@@ -1,2 +1,2 @@
-Leader: 2
+Leader: 3
 Members: 3

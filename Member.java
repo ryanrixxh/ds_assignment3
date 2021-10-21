@@ -12,13 +12,13 @@ class Member extends Thread {
   static Scanner sys_in = new Scanner(System.in);
 
   public static int current_leader = 0;
-  public static int total_members = 3;
+  public static int total_members = 5;
 
   public static int id;
   public static int id_count = id;
   public static int value = id;
 
-  public static int majority = 2;
+  public static int majority = 3;
   public static Boolean propose_init = false;
   public static int promise_count = 0;
   public static int accept_count = 0;
@@ -130,7 +130,7 @@ class Member extends Thread {
         System.out.println("Member " + recReq.id + "  has promised");
         promise_count++;
         System.out.println("Promise count: " + promise_count);
-        if (promise_count >= 2) {
+        if (promise_count >= majority) {
           promise_count = 0;
           if(prior_recieved) {
             System.out.println("I have majority accepts. Proposing M" + accepted_value);
@@ -147,7 +147,7 @@ class Member extends Thread {
         promise_count++;
         accepted_value = recReq.value;
         System.out.println("Promise count: " + promise_count);
-        if (promise_count >= 2) {
+        if (promise_count >= majority) {
           promise_count = 0;
           if(prior_recieved) {
             System.out.println("I have majority accepts. Proposing M" + accepted_value);
@@ -202,20 +202,25 @@ class Member extends Thread {
   }
 
   private static void send_prepare(int id) {
-    try {
       Request req = new Request("prepare",id);
 
-      for (int i = 1; i < 4; i++) {
+      for (int i = 1; i < total_members + 1; i++) {
         if (i != id) {
+          try {
           Socket socket = new Socket("localhost",2000 + i);
           ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
           out.writeObject(req);
+          }
+          catch (ConnectException e) {
+            fail_count++;
+            System.out.println("Peer " + i + " unavailable. Fails: " + fail_count);
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+          }
         }
       }
-    }
-    catch (Exception e) {
-      e.printStackTrace();
-    }
+
   }
 
   //Send a promise to accept a proposal along with the id the promise came from
@@ -261,19 +266,23 @@ class Member extends Thread {
 
   //Sends a proposal with the id of the proposer and the value being proposed
   private static void send_proposal(int id, int value) {
-    try {
       Request proposal = new Request("propose", id, value);
 
-      for (int i = 1; i < 4; i++) {
+      for (int i = 1; i < total_members + 1; i++) {
         if(i != id) {
-          Socket socket = new Socket("localhost", 2000 + i);
-          ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-          out.writeObject(proposal);
-        }
+          try {
+            Socket socket = new Socket("localhost",2000 + i);
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.writeObject(proposal);
+          }
+          catch (ConnectException e) {
+            fail_count++;
+            System.out.println("Peer " + i + " unavailable. Fails: " + fail_count);
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+          }
       }
-    }
-    catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
