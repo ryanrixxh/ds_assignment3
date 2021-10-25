@@ -15,15 +15,17 @@ class Member extends Thread {
   public static int total_members = 5;
 
   public static int id;
+  public static int original;
   public static int id_count = id;
   public static int value = id;
 
   public static int majority = 3;
-  public static Boolean propose_init = false;
+  public static Boolean promise_failed = false;
   public static int promise_count = 0;
   public static int accept_count = 0;
   public static int fail_count = 0;
 
+  public static int send_id = 0;
   public static int promised_id = -1;
   public static int promised_value = -1;
   public static int max_prepare_id = 0;
@@ -40,6 +42,7 @@ class Member extends Thread {
       System.out.println("Current Leader: " + current_leader);
 
       id = Integer.parseInt(args[0]);
+      original = id;
       int p = 2000 + id;
       Server server = new Server(p);
       new Thread(server).start();
@@ -55,8 +58,8 @@ class Member extends Thread {
           System.out.println("Current Leader: " + find_leader());
           if (current_leader != leader_found)
             current_leader = leader_found;
-        } else if (command.equals("propose")) {
-          propose_init = true;
+        } else if (command.equals("endTerm")) {
+            end_term();
         }
       }
 
@@ -117,9 +120,14 @@ class Member extends Thread {
         System.out.println(max_prepare_id);
         if (recID >= max_prepare_id) {
           max_prepare_id = recID;
+          while (recID > total_members) {
+            recID = recID - total_members;
+          }
           if (send_prior_prop) {
+            System.out.println("Sending previos accept to M" + recID);
             send_previous_accept(id, accepted_id, recID, value);
           } else {
+            System.out.println("Sending promise to M" + recID);
             send_promise(id, recID);
           }
         } else {
@@ -133,11 +141,11 @@ class Member extends Thread {
         if (promise_count >= majority) {
           promise_count = 0;
           if(prior_recieved) {
-            System.out.println("I have majority accepts. Proposing M" + accepted_value);
+            System.out.println("I have majority accepts. Proposing with id: " + id);
             send_proposal(id, accepted_value);
           } else {
-            System.out.println("I have majority accepts. Proposing myself");
-            send_proposal(id, id);
+            System.out.println("I have majority accepts. Proposing with id: " + id);
+            send_proposal(id, original);
           }
         }
 
@@ -150,24 +158,29 @@ class Member extends Thread {
         if (promise_count >= majority) {
           promise_count = 0;
           if(prior_recieved) {
-            System.out.println("I have majority accepts. Proposing M" + accepted_value);
+            System.out.println("I have majority accepts. Proposing with id: " + id);
             send_proposal(id, accepted_value);
           } else {
-            System.out.println("I have majority accepts. Proposing myself");
-            send_proposal(id, id);
+            System.out.println("I have majority accepts. Proposing with id: " + id);
+            send_proposal(id, original);
           }
         }
 
       } else if (resType.equals("propose")) {
+        System.out.println("Proposal id: " + recReq.id);
         if(recID == max_prepare_id) {
           System.out.println("I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
           max_id = recID;
-          send_accept(id, recReq.id, recReq.value);
+          while (recID > total_members) {
+            recID = recID - total_members;
+          }
+          send_accept(id, recID, recReq.value);
           send_prior_prop = true;
           value = recReq.value;
           accepted_id = recReq.id;
           System.out.println("I have accepted value " + value + " from Member " + recID);
         } else {
+          System.out.println("I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
           send_fail(id, recID);
         }
 
@@ -188,11 +201,27 @@ class Member extends Thread {
       } else if (resType.equals("fail")) {
         fail_count++;
         if (fail_count >= (total_members - 1)/2) {
-          Thread.sleep(200);
+          promise_failed = true;
+          System.out.println("Prepare has failed. Not enough promises");
+          Thread.sleep(2000);
           promise_count = 0;
           fail_count = 0;
-          System.out.println("Prepare has failed. Not enough promises");
         }
+
+      } else if (resType.equals("endTerm")) {
+        System.out.println("M" + current_leader + " is ready to end their term. Resetting values.");
+        promised_id = -1;
+        promised_value = -1;
+        send_prior_prop = false;
+        prior_recieved = false;
+        accepted_id = -1;
+        accepted_value = id;
+      }
+
+      if (promise_failed) {
+        promise_failed = false;
+        id = id + total_members;
+        send_prepare(id);
       }
     }
       catch (Exception e) {
@@ -202,10 +231,16 @@ class Member extends Thread {
   }
 
   private static void send_prepare(int id) {
+
       Request req = new Request("prepare",id);
+      int real_id = id;
+
+      while (real_id > total_members) {
+        real_id = real_id - total_members;
+      }
 
       for (int i = 1; i < total_members + 1; i++) {
-        if (i != id) {
+        if (i != real_id) {
           try {
           Socket socket = new Socket("localhost",2000 + i);
           ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
@@ -267,9 +302,15 @@ class Member extends Thread {
   //Sends a proposal with the id of the proposer and the value being proposed
   private static void send_proposal(int id, int value) {
       Request proposal = new Request("propose", id, value);
+      fail_count = 0;
+      int real_id = id;
+
+      while (real_id > total_members) {
+        real_id = real_id - total_members;
+      }
 
       for (int i = 1; i < total_members + 1; i++) {
-        if(i != id) {
+        if(i != real_id) {
           try {
             Socket socket = new Socket("localhost",2000 + i);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
@@ -346,4 +387,37 @@ class Member extends Thread {
       e.printStackTrace();
     }
   }
+
+  private static void end_term() {
+    if (current_leader != id) {
+      System.out.println("I am not leader. I cannot end a term");
+    } else {
+      promised_id = -1;
+      promised_value = -1;
+      send_prior_prop = false;
+      prior_recieved = false;
+      accepted_id = -1;
+      accepted_value = id;
+
+      Request endReq = new Request("endTerm", id);
+
+      for (int i = 1; i < total_members + 1; i++) {
+        if(i != id) {
+          try {
+            Socket socket = new Socket("localhost",2000 + i);
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.writeObject(endReq);
+          }
+          catch (ConnectException e) {
+            fail_count++;
+            System.out.println("Peer " + i + " unavailable. Fails: " + fail_count);
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+  }
+
 }
