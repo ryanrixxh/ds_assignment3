@@ -12,14 +12,14 @@ class Member extends Thread {
   static Scanner sys_in = new Scanner(System.in);
 
   public static int current_leader = 0;
-  public static int TOTAL_MEMBERS = 5;
+  public static int TOTAL_MEMBERS = 3;
 
   public static int id;
   public static int original;
   public static int id_count = id;
   public static int value = id;
 
-  public static int majority = 3;
+  public static int majority = (TOTAL_MEMBERS/2) + 1;
   public static Boolean promise_failed = false;
   public static int promise_count = 0;
   public static int accept_count = 0;
@@ -49,8 +49,12 @@ class Member extends Thread {
 
       Scanner sys_in = new Scanner(System.in);
 
+      //Utility for the automatic testing component
+      if (args.length == 2) {
+        command = args[1];
+      }
+
       while (!command.equals("end")) {
-        command = sys_in.nextLine();
         if(command.equals("prepare")) {
           send_prepare(id);
         } else if (command.equals("who")) {
@@ -59,8 +63,9 @@ class Member extends Thread {
           if (current_leader != leader_found)
             current_leader = leader_found;
         } else if (command.equals("endTerm")) {
-            end_term();
+            end_term(original);
         }
+        command = sys_in.nextLine();
       }
 
     }
@@ -117,7 +122,6 @@ class Member extends Thread {
 
       if (resType.equals("prepare")) {
         System.out.println("Recieved prepare request from id " + recID);
-        System.out.println(max_prepare_id);
         if (recID >= max_prepare_id) {
           max_prepare_id = recID;
           while (recID > TOTAL_MEMBERS) {
@@ -131,6 +135,9 @@ class Member extends Thread {
             send_promise(id, recID);
           }
         } else {
+          while (recID > TOTAL_MEMBERS) {
+            recID = recID - TOTAL_MEMBERS;
+          }
           send_fail(id, recID);
         }
 
@@ -146,6 +153,7 @@ class Member extends Thread {
           } else {
             System.out.println("I have majority accepts. Proposing my own value with id: " + id);
             send_proposal(id, original);
+            current_leader = id;
           }
         }
 
@@ -163,6 +171,7 @@ class Member extends Thread {
           } else {
             System.out.println("I have majority accepts. Proposing my own value with id: " + id);
             send_proposal(id, original);
+            current_leader = id;
           }
         }
 
@@ -181,6 +190,9 @@ class Member extends Thread {
           System.out.println("I have accepted value " + value + " from Member " + recID);
         } else {
           System.out.println("I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
+          while (recID > TOTAL_MEMBERS) {
+            recID = recID - TOTAL_MEMBERS;
+          }
           send_fail(id, recID);
         }
 
@@ -194,7 +206,7 @@ class Member extends Thread {
             change_leader(accepted_value);
           } else {
             System.out.println("I am the new council leader");
-            change_leader(id);
+            change_leader(original);
           }
         }
 
@@ -231,6 +243,7 @@ class Member extends Thread {
   }
 
   private static void send_prepare(int id) {
+      System.out.println("Sending prepare ...");
 
       Request req = new Request("prepare",id);
       int real_id = id;
@@ -388,9 +401,9 @@ class Member extends Thread {
     }
   }
 
-  private static void end_term() {
+  private static void end_term(int id) {
     if (current_leader != id) {
-      System.out.println("I am not leader. I cannot end a term");
+      System.out.println("Current leader is: " + current_leader + " I cannot end a term");
     } else {
       promised_id = -1;
       promised_value = -1;
@@ -398,7 +411,7 @@ class Member extends Thread {
       prior_recieved = false;
       accepted_id = -1;
       accepted_value = id;
-
+      System.out.println("I am the current leader. Sending end to peers.");
       Request endReq = new Request("endTerm", id);
 
       for (int i = 1; i < TOTAL_MEMBERS + 1; i++) {
@@ -409,8 +422,7 @@ class Member extends Thread {
             out.writeObject(endReq);
           }
           catch (ConnectException e) {
-            fail_count++;
-            System.out.println("Peer " + i + " unavailable. Fails: " + fail_count);
+            System.out.println("Peer " + i + " unavailable.");
           }
           catch (Exception e) {
             e.printStackTrace();
