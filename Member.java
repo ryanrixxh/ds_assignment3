@@ -65,7 +65,11 @@ class Member extends Thread {
         } else if (command.equals("endTerm")) {
             end_term(original);
         }
-        command = sys_in.nextLine();
+        if (sys_in.hasNextLine()) {
+          command = sys_in.nextLine();
+        } else {
+          command = "";
+        }
       }
 
     }
