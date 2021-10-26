@@ -60,11 +60,9 @@ class Member extends Thread {
         } else if (member_type.equals("late")) {
           response_time = (int)(Math.random()*(10000-5000+1)+5000);
         } else if (member_type.equals("never")) {
-          response_time = -1;
+          response_time = 0;
         }
       }
-
-      System.out.println(response_time);
 
       //Utility for the automatic testing component
       if (args.length == 3) {
@@ -142,6 +140,7 @@ class Member extends Thread {
       int recID = recReq.id;
 
       if (resType.equals("prepare")) {
+        Thread.sleep(response_time);
         System.out.println("[M" + original + "] Recieved prepare request from id " + recID);
         if (recID >= max_prepare_id) {
           max_prepare_id = recID;
