@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#To change the amount of servers initiated by parallel add or delete arguments from line 8
+#Tests a single prepare and proposal run with response times matching the assignment details
 trap "exit" INT TERM ERR
 trap "kill 0" EXIT
 echo Starting test ...

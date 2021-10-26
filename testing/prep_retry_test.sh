@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#To change the amount of servers initiated by parallel add or delete arguments from line 8
 #tests whether a member will retry with a higher id number and become sucessful on the second run
 trap "exit" INT TERM ERR
 trap "kill 0" EXIT

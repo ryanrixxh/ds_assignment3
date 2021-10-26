@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-#tests whether another prepare will carry the value on the previous and vote for an already reached consensus
+#To change the amount of servers initiated by parallel add or delete arguments from line 8
+#Tests whether another prepare will carry the value on the previous and vote for an already reached consensus
 trap "exit" INT TERM ERR
 trap "kill 0" EXIT
 echo Starting test ...
