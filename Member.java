@@ -13,6 +13,7 @@ class Member extends Thread {
 
   public static int current_leader = 0;
   public static int TOTAL_MEMBERS = 9;
+  public static int STARTING_PORT = 2000;
 
   public static int id;
   public static int original;
@@ -273,7 +274,7 @@ class Member extends Thread {
       for (int i = 1; i < TOTAL_MEMBERS + 1; i++) {
         if (i != real_id) {
           try {
-          Socket socket = new Socket("localhost",2000 + i);
+          Socket socket = new Socket("localhost",STARTING_PORT + i);
           ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
           out.writeObject(req);
           }
@@ -343,7 +344,7 @@ class Member extends Thread {
       for (int i = 1; i < TOTAL_MEMBERS + 1; i++) {
         if(i != real_id) {
           try {
-            Socket socket = new Socket("localhost",2000 + i);
+            Socket socket = new Socket("localhost",STARTING_PORT + i);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(proposal);
           }
@@ -435,7 +436,7 @@ class Member extends Thread {
       for (int i = 1; i < TOTAL_MEMBERS + 1; i++) {
         if(i != id) {
           try {
-            Socket socket = new Socket("localhost",2000 + i);
+            Socket socket = new Socket("localhost",STARTING_PORT + i);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(endReq);
           }
