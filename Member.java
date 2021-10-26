@@ -12,12 +12,14 @@ class Member extends Thread {
   static Scanner sys_in = new Scanner(System.in);
 
   public static int current_leader = 0;
-  public static int TOTAL_MEMBERS = 3;
+  public static int TOTAL_MEMBERS = 9;
 
   public static int id;
   public static int original;
   public static int id_count = id;
   public static int value = id;
+  public static String member_type;
+  public static int response_time = 0;
 
   public static int majority = (TOTAL_MEMBERS/2) + 1;
   public static Boolean promise_failed = false;
@@ -39,7 +41,6 @@ class Member extends Thread {
   public static void main(String[] args) {
     try {
       current_leader = find_leader();
-      System.out.println("Current Leader: " + current_leader);
 
       id = Integer.parseInt(args[0]);
       original = id;
@@ -49,10 +50,27 @@ class Member extends Thread {
 
       Scanner sys_in = new Scanner(System.in);
 
-      //Utility for the automatic testing component
+      //Allows for the user to determine the response time of a peer
       if (args.length == 2) {
-        command = args[1];
+        member_type = args[1];
+        if (member_type.equals("immediate")) {
+          response_time = 0;
+        } else if (member_type.equals("medium")) {
+          response_time = (int)(Math.random()*(5000-0+1)+0);
+        } else if (member_type.equals("late")) {
+          response_time = (int)(Math.random()*(10000-5000+1)+5000);
+        } else if (member_type.equals("never")) {
+          response_time = -1;
+        }
       }
+
+      System.out.println(response_time);
+
+      //Utility for the automatic testing component
+      if (args.length == 3) {
+        command = args[2];
+      }
+
 
       while (!command.equals("end")) {
         if(command.equals("prepare")) {
@@ -116,26 +134,25 @@ class Member extends Thread {
 
     public void run() {
       try {
-      System.out.println("Recieved connection, starting handler ...");
+      System.out.println("[M" + original + "] Recieved connection, starting handler ...");
 
       ObjectInputStream in = new ObjectInputStream(recieveSocket.getInputStream());
       Request recReq = (Request) in.readObject();
       String resType = recReq.type;
       int recID = recReq.id;
-      System.out.println(resType);
 
       if (resType.equals("prepare")) {
-        System.out.println("Recieved prepare request from id " + recID);
+        System.out.println("[M" + original + "] Recieved prepare request from id " + recID);
         if (recID >= max_prepare_id) {
           max_prepare_id = recID;
           while (recID > TOTAL_MEMBERS) {
             recID = recID - TOTAL_MEMBERS;
           }
           if (send_prior_prop) {
-            System.out.println("Sending previos accept to M" + recID);
+            System.out.println("[M" + original + "] Sending previos accept to M" + recID);
             send_previous_accept(id, accepted_id, recID, value);
           } else {
-            System.out.println("Sending promise to M" + recID);
+            System.out.println("[M" + original + "] Sending promise to M" + recID);
             send_promise(id, recID);
           }
         } else {
@@ -180,9 +197,8 @@ class Member extends Thread {
         }
 
       } else if (resType.equals("propose")) {
-        System.out.println("Proposal id: " + recReq.id);
         if(recID == max_prepare_id) {
-          System.out.println("I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
+          System.out.println("[M" + original + "] I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
           max_id = recID;
           while (recID > TOTAL_MEMBERS) {
             recID = recID - TOTAL_MEMBERS;
@@ -191,9 +207,9 @@ class Member extends Thread {
           send_prior_prop = true;
           value = recReq.value;
           accepted_id = recReq.id;
-          System.out.println("I have accepted value " + value + " from Member " + recID);
+          System.out.println("[M" + original + "] I have accepted value " + value + " from Member " + recID);
         } else {
-          System.out.println("I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
+          System.out.println("[M" + original + "] I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
           while (recID > TOTAL_MEMBERS) {
             recID = recID - TOTAL_MEMBERS;
           }
@@ -225,7 +241,7 @@ class Member extends Thread {
         }
 
       } else if (resType.equals("endTerm")) {
-        System.out.println("M" + current_leader + " is ready to end their term. Resetting values.");
+        System.out.println("[M" + original + "] M" + current_leader + " is ready to end their term. Resetting values.");
         promised_id = -1;
         promised_value = -1;
         send_prior_prop = false;
@@ -247,7 +263,6 @@ class Member extends Thread {
   }
 
   private static void send_prepare(int id) {
-      System.out.println("Sending prepare ...");
 
       Request req = new Request("prepare",id);
       int real_id = id;
