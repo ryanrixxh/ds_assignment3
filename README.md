@@ -49,7 +49,7 @@ Compiling the code works as follows:
 ## Manual Operation and Testing
 
 In order to successfully run this system manually, you will need to initiate separate terminals and run each Member separately. 
-To get a Member running there are several options. The most basic command is `java Member n` where n is the desired Member number. By default any member initiated in this way will have an immediate response time. To specify a different response time simply provide another argument (e.g. if you want a late responding member use `java Member n late`). The available response times are immediate, medium, late & never.
+To get a Member running there are several options. The most basic command is `java Member n` where n is the desired Member number. By default any member initiated in this way will have an immediate response time. To specify a different response time simply provide another argument (e.g. if you want a late responding member use `java Member n late`). The available response times are immediate, medium, late & never. Members M2 and M3 response times are determined by chance so whichever response time you input will not effect these two members in particular. All other members will keep the inputed response time.
 
 If you would like a member to instantly prepare without requiring a manual input you can use `java Member n medium prepare`. This is not necessary however as simply inputing `prepare`into the console after the Member is already running will also work. This is mainly used for automated testing.
 
