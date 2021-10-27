@@ -22,7 +22,7 @@ class Member extends Thread {
   public static String member_type;
   public static int response_time = 0;
   public static int cafe;
-  public static int woods;
+  public static int offline;
 
   public static int majority = (TOTAL_MEMBERS/2) + 1;
   public static Boolean promise_failed = false;
@@ -77,10 +77,10 @@ class Member extends Thread {
         }
       }
 
-      //M3 has a 50% chance of going to the woods and disconnecting from the system
+      //M3 has a 50% chance of going to the offline and disconnecting from the system
       if (original == 3) {
-        woods = (int)(Math.random()*(1-0+1)+0);
-        if (woods == 1) {
+        offline = (int)(Math.random()*(1-0+1)+0);
+        if (offline == 1) {
           System.exit(0);
         }
       }
@@ -192,9 +192,22 @@ class Member extends Thread {
           if(prior_recieved) {
             System.out.println("I have majority accepts. Proposing with id: " + id);
             send_proposal(id, accepted_value);
+            //M2 and M3 have a 50% chance to go offline after proposing
+            if (original == 3 || original == 2) {
+              offline = (int)(Math.random()*(1-0+1)+0);
+              if (offline == 1) {
+                System.exit(0);
+              }
+            }
           } else {
             System.out.println("I have majority accepts. Proposing my own value with id: " + id);
             send_proposal(id, original);
+            if (original == 3 || original == 2) {
+              offline = (int)(Math.random()*(1-0+1)+0);
+              if (offline == 1) {
+                System.exit(0);
+              }
+            }
             current_leader = id;
           }
         }
@@ -210,9 +223,21 @@ class Member extends Thread {
           if(prior_recieved) {
             System.out.println("I have majority accepts. Proposing with id: " + id);
             send_proposal(id, accepted_value);
+            if (original == 3 || original == 2) {
+              offline = (int)(Math.random()*(1-0+1)+0);
+              if (offline == 1) {
+                System.exit(0);
+              }
+            }
           } else {
             System.out.println("I have majority accepts. Proposing my own value with id: " + id);
             send_proposal(id, original);
+            if (original == 3 || original == 2) {
+              offline = (int)(Math.random()*(1-0+1)+0);
+              if (offline == 1) {
+                System.exit(0);
+              }
+            }
             current_leader = id;
           }
         }
