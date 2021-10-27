@@ -216,7 +216,10 @@ class Member extends Thread {
         prior_recieved = true;
         System.out.println("Member " + recReq.id + "  has already accepted value " + recReq.value + " from " + recReq.accepted_id);
         promise_count++;
-        accepted_value = recReq.value;
+        if (recReq.id > highest_accepted_id) {
+          highest_accepted_id = recReq.id;
+          accepted_value = recReq.value;
+        }
         System.out.println("Promise count: " + promise_count);
         if (promise_count >= majority) {
           promise_count = 0;
@@ -310,6 +313,7 @@ class Member extends Thread {
     }
   }
 
+  //Sends a prepare with the matching ID to all other peers
   private static void send_prepare(int id) {
 
       Request req = new Request("prepare",id);
@@ -352,6 +356,7 @@ class Member extends Thread {
     }
   }
 
+  //Sends a promise containing a previously accepted value if it exists
   private static void send_previous_accept(int id, int accepted_id, int p, int value) {
     try {
       int port = 2000 + p;
@@ -468,6 +473,7 @@ class Member extends Thread {
     }
   }
 
+  //Sends an endTerm message to all other peers notifying them that a new run should begin
   private static void end_term(int id) {
     if (current_leader != id) {
       System.out.println("Current leader is: " + current_leader + " I cannot end a term");
