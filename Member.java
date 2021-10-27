@@ -67,7 +67,7 @@ class Member extends Thread {
         }
       }
 
-      //M2 has a 50% chance of being an instant responder or a late responder
+      //M2 has a 50% chance of being an instant responder (working in the Cafe) or a late responder
       if (original == 2) {
         cafe = (int)(Math.random()*(1-0+1)+0);
         if (cafe == 0) {
