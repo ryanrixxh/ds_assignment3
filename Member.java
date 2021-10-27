@@ -21,6 +21,8 @@ class Member extends Thread {
   public static int value = id;
   public static String member_type;
   public static int response_time = 0;
+  public static int cafe;
+  public static int woods;
 
   public static int majority = (TOTAL_MEMBERS/2) + 1;
   public static Boolean promise_failed = false;
@@ -61,7 +63,25 @@ class Member extends Thread {
         } else if (member_type.equals("late")) {
           response_time = (int)(Math.random()*(10000-5000+1)+5000);
         } else if (member_type.equals("never")) {
+          response_time = Integer.MAX_VALUE;
+        }
+      }
+
+      //M2 has a 50% chance of being an instant responder or a late responder
+      if (original == 2) {
+        cafe = (int)(Math.random()*(1-0+1)+0);
+        if (cafe == 0) {
+          response_time = (int)(Math.random()*(10000-5000+1)+5000);
+        } else if (cafe == 1) {
           response_time = 0;
+        }
+      }
+
+      //M3 has a 50% chance of going to the woods and disconnecting from the system
+      if (original == 3) {
+        woods = (int)(Math.random()*(1-0+1)+0);
+        if (woods == 1) {
+          System.exit(0);
         }
       }
 
@@ -141,6 +161,7 @@ class Member extends Thread {
       int recID = recReq.id;
 
       if (resType.equals("prepare")) {
+
         Thread.sleep(response_time);
         System.out.println("[M" + original + "] Recieved prepare request from id " + recID);
         if (recID >= max_prepare_id) {
@@ -197,6 +218,7 @@ class Member extends Thread {
         }
 
       } else if (resType.equals("propose")) {
+        Thread.sleep(response_time);
         if(recID == max_prepare_id) {
           System.out.println("[M" + original + "] I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
           max_id = recID;
@@ -241,6 +263,7 @@ class Member extends Thread {
         }
 
       } else if (resType.equals("endTerm")) {
+        Thread.sleep(response_time);
         System.out.println("[M" + original + "] M" + current_leader + " is ready to end their term. Resetting values.");
         promised_id = -1;
         promised_value = -1;
