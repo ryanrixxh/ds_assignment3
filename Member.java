@@ -11,10 +11,11 @@ class Member extends Thread {
   static String command = "";
   static Scanner sys_in = new Scanner(System.in);
 
-  public static int current_leader = 0;
+  //Change these two values to change total members in the council and the set of ports they run on
   public static int TOTAL_MEMBERS = 9;
   public static int STARTING_PORT = 2000;
 
+  public static int current_leader = 0;
   public static int id;
   public static int original;
   public static int id_count = id;
@@ -34,7 +35,6 @@ class Member extends Thread {
   public static int promised_id = -1;
   public static int promised_value = -1;
   public static int max_prepare_id = 0;
-  public static int max_id = 0;
 
   public static Boolean send_prior_prop = false;
   public static Boolean prior_recieved = false;
@@ -90,7 +90,7 @@ class Member extends Thread {
         command = args[2];
       }
 
-
+      //User input handling for manual operation. The testing scripts using args[]
       while (!command.equals("end")) {
         if(command.equals("prepare")) {
           send_prepare(id);
@@ -119,6 +119,7 @@ class Member extends Thread {
 
   }
 
+  //The server runs at all times listening for communication from other Members. If it recieves a message it starts a Handler thread.
   private static class Server implements Runnable {
     private static int port;
 
@@ -144,6 +145,7 @@ class Member extends Thread {
     }
   }
 
+  //If a server recieves an incoming message from another Member. The handler will evaluate it and choose a response
   private static class Handler implements Runnable {
     private final Socket recieveSocket;
 
@@ -160,8 +162,8 @@ class Member extends Thread {
       String resType = recReq.type;
       int recID = recReq.id;
 
+      //If the message is a prepare then either send a promise or a previously accepted proposal if is exists
       if (resType.equals("prepare")) {
-
         Thread.sleep(response_time);
         System.out.println("[M" + original + "] Recieved prepare request from id " + recID);
         if (recID >= max_prepare_id) {
@@ -183,6 +185,7 @@ class Member extends Thread {
           send_fail(id, recID);
         }
 
+      //If the message is a prepare-ok add to the promise count. Sends_proposal on majority
       } else if (resType.equals("prepare-ok")) {
         System.out.println("Member " + recReq.id + "  has promised");
         promise_count++;
@@ -212,6 +215,7 @@ class Member extends Thread {
           }
         }
 
+      //If the recieved message is a preAccept, take on its value only if the ID is the max seen so far
       } else if (resType.equals("preAccept")) {
         prior_recieved = true;
         System.out.println("Member " + recReq.id + "  has already accepted value " + recReq.value + " from " + recReq.accepted_id);
@@ -245,11 +249,11 @@ class Member extends Thread {
           }
         }
 
+      //If the propose message matches the prepare ID then send an accept
       } else if (resType.equals("propose")) {
         Thread.sleep(response_time);
         if(recID == max_prepare_id) {
           System.out.println("[M" + original + "] I promised to id " + max_prepare_id + ". The proposal id is: " + recID);
-          max_id = recID;
           while (recID > TOTAL_MEMBERS) {
             recID = recID - TOTAL_MEMBERS;
           }
@@ -266,6 +270,7 @@ class Member extends Thread {
           send_fail(id, recID);
         }
 
+      //If a message is Accepted then add to the accept count. If a majority success occurs, create or update a local file with the current leader
       } else if (resType.equals("Accepted")) {
         System.out.println("Member " + recReq.id + " has accepted value " + recReq.value);
         accept_count++;
@@ -280,6 +285,7 @@ class Member extends Thread {
           }
         }
 
+      //If a message is fail then add to the fail count.
       } else if (resType.equals("fail")) {
         fail_count++;
         if (fail_count >= (TOTAL_MEMBERS - 1)/2) {
@@ -290,6 +296,7 @@ class Member extends Thread {
           fail_count = 0;
         }
 
+      //If an endTerm message appears then reset all values and accept new prepares as if they were the first to arrive
       } else if (resType.equals("endTerm")) {
         Thread.sleep(response_time);
         System.out.println("[M" + original + "] M" + current_leader + " is ready to end their term. Resetting values.");
