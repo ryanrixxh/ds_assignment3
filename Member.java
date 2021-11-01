@@ -35,7 +35,7 @@ class Member extends Thread {
   public static int promised_id = -1;
   public static int promised_value = -1;
   public static int max_prepare_id = 0;
-  public static int highest_prepare_id = 0;
+  public static int highest_accepted_id = 0;
 
   public static Boolean send_prior_prop = false;
   public static Boolean prior_recieved = false;
