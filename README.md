@@ -1,6 +1,6 @@
 # README
 
-# Distributed Systems Assignment 3
+# Paxos Consensus Algorithm 
 
 ## Design / Workflow
 The program functions on a peer to peer system. Each peer connects and interacts with the other peers via a loop which connects to different ports that the peers are located on. If a peer is not found, the program will continue until it has attempted to contact all peers.
